@@ -1,4 +1,9 @@
-use std::{error::Error, fs::File, io::{self, BufRead, BufReader, BufWriter, Write}, str::FromStr};
+use std::{
+    error::Error,
+    fs::File,
+    io::{self, BufRead, BufReader, BufWriter, Write},
+    str::FromStr,
+};
 
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
@@ -13,6 +18,7 @@ impl Point {
     fn validate_range(rng: Decimal, check: Decimal) -> bool {
         (-rng..=rng).contains(&check)
     }
+
     pub fn new(lat: Decimal, lon: Decimal) -> Self {
         if Self::validate_range(dec!(90.0), lat) && Self::validate_range(dec!(180.0), lon) {
             Self { lat, lon }
@@ -94,7 +100,9 @@ impl FIRBoundary {
     }
 
     fn to_writer<W>(&self, writer: &mut BufWriter<W>) -> io::Result<()>
-    where W: Write {
+    where
+        W: Write,
+    {
         writeln!(
             writer,
             "{}|{}|{}|{}|{}|{}|{}|{}|{}",
@@ -108,7 +116,11 @@ impl FIRBoundary {
             self.max_lon,
             self.center.to_fir_dat_str(),
         )?;
-        self.bondary_corners.iter().map(|c| writeln!(writer, "{}", c.to_fir_dat_str())).collect::<Result<Vec<_>, io::Error>>().map(|_| ())
+        self.bondary_corners
+            .iter()
+            .map(|c| writeln!(writer, "{}", c.to_fir_dat_str()))
+            .collect::<Result<Vec<_>, io::Error>>()
+            .map(|_| ())
     }
 }
 
@@ -141,7 +153,11 @@ pub fn read_file() -> Result<Vec<FIRBoundary>, Box<dyn Error>> {
 
 pub fn write_to_file(firs: &[FIRBoundary]) -> Result<(), Box<dyn Error>> {
     let mut file = BufWriter::new(File::create("test_FIRBoundary.dat")?);
-    firs.iter().map(|fir| fir.to_writer(&mut file)).collect::<Result<Vec<_>,_>>().map(|_| ()).map_err(|e| e.into())
+    firs.iter()
+        .map(|fir| fir.to_writer(&mut file))
+        .collect::<Result<Vec<_>, _>>()
+        .map(|_| ())
+        .map_err(|e| e.into())
 }
 
 #[cfg(test)]

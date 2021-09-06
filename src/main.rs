@@ -1,6 +1,7 @@
 use std::error::Error;
 
-mod fir_boundaries;
+pub(crate) mod fir_boundaries;
+pub(crate) mod geo_json;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let data = fir_boundaries::read_file()?;

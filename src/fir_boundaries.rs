@@ -7,11 +7,34 @@ use std::{
 
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Point {
     lat: Decimal,
     lon: Decimal,
+}
+
+impl Serialize for Point {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer
+    {
+        (self.lat, self.lon).serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Point {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>
+    {
+        let vals = <(Decimal, Decimal)>::deserialize(deserializer)?;
+        Ok(Self{
+            lat: vals.0,
+            lon: vals.1,
+        })
+    }
 }
 
 impl Point {
@@ -56,7 +79,7 @@ pub struct FIRBoundary {
     pub min_lon: Decimal,
     pub max_lat: Decimal,
     pub max_lon: Decimal,
-    pub center: Point, //think center chagnes where the label are placed.
+    pub center: Point,
     pub bondary_corners: Vec<Point>,
 }
 

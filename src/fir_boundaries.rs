@@ -1,9 +1,15 @@
-use std::{error::Error, fs::File, io::{self, BufRead, BufReader, BufWriter, Write}, path::Path, str::FromStr};
+use std::{
+    error::Error,
+    fs::File,
+    io::{self, BufRead, BufReader, BufWriter, Write},
+    path::Path,
+    str::FromStr,
+};
 
+use itertools::Itertools;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
-use itertools::Itertools;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Point {
@@ -14,7 +20,7 @@ pub struct Point {
 impl Serialize for Point {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer
+        S: serde::Serializer,
     {
         (self.lat, self.lon).serialize(serializer)
     }
@@ -23,10 +29,10 @@ impl Serialize for Point {
 impl<'de> Deserialize<'de> for Point {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: serde::Deserializer<'de>
+        D: serde::Deserializer<'de>,
     {
         let vals = <(Decimal, Decimal)>::deserialize(deserializer)?;
-        Ok(Self{
+        Ok(Self {
             lat: vals.0,
             lon: vals.1,
         })
@@ -172,30 +178,31 @@ pub fn read_file() -> Result<Vec<FIRBoundary>, Box<dyn Error>> {
 
 pub(crate) fn convert_from_geojson(gj: crate::geo_json::GeoJson) -> Vec<FIRBoundary> {
     let data = gj.features;
-    data.iter().map(|n| {
-        let points = &n.geometry.array[0];
-        let points = &points[..points.len()-1];
-        let mut fir = FIRBoundary{
-            icao: n.properties.icao.clone(),
-            is_oseanic: n.properties.is_oceanic,
-            is_extension: n.properties.is_extension,
-            min_lat: points.iter().map(|n| n.lat).min().unwrap(),
-            min_lon: points.iter().map(|n| n.lon).min().unwrap(),
-            max_lat: points.iter().map(|n| n.lat).max().unwrap(),
-            max_lon: points.iter().map(|n| n.lon).max().unwrap(),
-            center: n.properties.center.clone(),
-            bondary_corners: points.to_owned(),
-        };
-        if fir.max_lon - fir.min_lon > dec!(180) {
-            std::mem::swap(&mut fir.max_lon, &mut fir.min_lon);
-        }
-        fir
-    }).sorted_unstable_by(|a, b| {
-        match a.icao.as_str().cmp(b.icao.as_str()) {
+    data.iter()
+        .map(|n| {
+            let points = &n.geometry.array[0];
+            let points = &points[..points.len() - 1];
+            let mut fir = FIRBoundary {
+                icao: n.properties.icao.clone(),
+                is_oseanic: n.properties.is_oceanic,
+                is_extension: n.properties.is_extension,
+                min_lat: points.iter().map(|n| n.lat).min().unwrap(),
+                min_lon: points.iter().map(|n| n.lon).min().unwrap(),
+                max_lat: points.iter().map(|n| n.lat).max().unwrap(),
+                max_lon: points.iter().map(|n| n.lon).max().unwrap(),
+                center: n.properties.center.clone(),
+                bondary_corners: points.to_owned(),
+            };
+            if fir.max_lon - fir.min_lon > dec!(180) {
+                std::mem::swap(&mut fir.max_lon, &mut fir.min_lon);
+            }
+            fir
+        })
+        .sorted_unstable_by(|a, b| match a.icao.as_str().cmp(b.icao.as_str()) {
             std::cmp::Ordering::Equal => a.is_extension.cmp(&b.is_extension),
-            n => n
-        }
-    }).collect()
+            n => n,
+        })
+        .collect()
 }
 
 pub fn write_to_file<P: AsRef<Path>>(firs: &[FIRBoundary], p: P) -> Result<(), Box<dyn Error>> {

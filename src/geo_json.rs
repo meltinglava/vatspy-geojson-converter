@@ -6,12 +6,12 @@ use serde::{Serialize, Deserialize};
 use crate::fir_boundaries::Point;
 
 #[derive(Debug, Serialize, Deserialize)]
-struct GeoJson {
+pub(crate) struct GeoJson {
     #[serde(rename="type")]
     typ: String,
     name: String,
     crs: Crs,
-    features: Vec<Feature>,
+    pub(crate) features: Vec<Feature>,
 }
 
 impl<T> From<T> for GeoJson
@@ -33,7 +33,7 @@ where
 struct Crs {
     #[serde(rename="type")]
     typ: String,
-    properties: IndexMap<String, String>
+    pub(crate) properties: IndexMap<String, String>
 }
 
 impl Default for Crs {
@@ -45,11 +45,11 @@ impl Default for Crs {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Feature {
+pub(crate) struct Feature {
     #[serde(rename="type")]
     typ: String,
-    properties: Properties,
-    geometry: Geometry
+    pub(crate) properties: Properties,
+    pub(crate) geometry: Geometry
 }
 
 impl From<&crate::fir_boundaries::FIRBoundary> for Feature {
@@ -64,12 +64,12 @@ impl From<&crate::fir_boundaries::FIRBoundary> for Feature {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-struct Properties {
+pub(crate) struct Properties {
     #[serde(rename="ICAO")]
-    icao: String,
-    is_oceanic: bool,
-    is_extension: bool,
-    center: Point,
+    pub(crate) icao: String,
+    pub(crate) is_oceanic: bool,
+    pub(crate) is_extension: bool,
+    pub(crate) center: Point,
 }
 
 impl From<&crate::fir_boundaries::FIRBoundary> for Properties {
@@ -84,10 +84,10 @@ impl From<&crate::fir_boundaries::FIRBoundary> for Properties {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Geometry {
+pub(crate) struct Geometry {
     #[serde(rename="type")]
     typ: String,
-    array: [Vec<Point>; 1], // might need to do stuff here when crossing 180 east west
+    pub(crate) array: [Vec<Point>; 1], // might need to do stuff here when crossing 180 east west
 }
 
 impl<T> From<T> for Geometry

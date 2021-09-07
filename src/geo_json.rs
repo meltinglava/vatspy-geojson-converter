@@ -96,7 +96,9 @@ where
 {
     fn from(source: T) -> Self {
         let mut array = source.deref().to_vec();
-        array.push(array[0].clone()); // ref: https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.6 second point
+        if array[0] != array[array.len() - 1] {
+            array.push(array[0].clone()); // ref: https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.6 second point
+        }
         Self {
             typ: "Polygon".to_string(),
             array: [array],

@@ -1,9 +1,4 @@
-use std::{
-    error::Error,
-    fs::File,
-    io::{self, BufRead, BufReader, BufWriter, Write},
-    str::FromStr,
-};
+use std::{error::Error, fs::File, io::{self, BufRead, BufReader, BufWriter, Write}, path::Path, str::FromStr};
 
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
@@ -71,7 +66,7 @@ impl FromStr for Point {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct FIRBoundary {
     pub icao: String,
     pub is_oseanic: bool,
@@ -175,7 +170,7 @@ pub fn read_file() -> Result<Vec<FIRBoundary>, Box<dyn Error>> {
     Ok(boundaries)
 }
 
-fn convert_from_geojson(gj: crate::geo_json::GeoJson) -> Vec<FIRBoundary> {
+pub(crate) fn convert_from_geojson(gj: crate::geo_json::GeoJson) -> Vec<FIRBoundary> {
     let data = gj.features;
     data.iter().map(|n| {
         let points = &n.geometry.array[0];
@@ -203,8 +198,8 @@ fn convert_from_geojson(gj: crate::geo_json::GeoJson) -> Vec<FIRBoundary> {
     }).collect()
 }
 
-pub fn write_to_file(firs: &[FIRBoundary]) -> Result<(), Box<dyn Error>> {
-    let mut file = BufWriter::new(File::create("test_FIRBoundary.dat")?);
+pub fn write_to_file<P: AsRef<Path>>(firs: &[FIRBoundary], p: P) -> Result<(), Box<dyn Error>> {
+    let mut file = BufWriter::new(File::create(p.as_ref())?);
     firs.iter()
         .map(|fir| fir.to_writer(&mut file))
         .collect::<Result<Vec<_>, _>>()

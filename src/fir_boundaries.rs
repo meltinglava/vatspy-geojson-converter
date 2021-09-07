@@ -22,7 +22,7 @@ impl Serialize for Point {
     where
         S: serde::Serializer,
     {
-        (self.lat, self.lon).serialize(serializer)
+        (self.lon, self.lat).serialize(serializer)
     }
 }
 
@@ -33,8 +33,8 @@ impl<'de> Deserialize<'de> for Point {
     {
         let vals = <(Decimal, Decimal)>::deserialize(deserializer)?;
         Ok(Self {
-            lat: vals.0,
-            lon: vals.1,
+            lat: vals.1,
+            lon: vals.0,
         })
     }
 }

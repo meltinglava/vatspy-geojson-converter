@@ -8,8 +8,8 @@ use clap::{AppSettings, Clap, crate_version};
 pub(crate) struct Opts {
     /// Input file input. This has to end with .bat or .geojson/.json.
     pub(crate) input: PathBuf,
-    /// If this argument is missing only validation will be done. If
-    /// it is given the oposite file will be generated. Note that this
-    /// file has the same requirements with file-endings as the input field.
+    /// If this argument is missing only validation will be done.
+    /// If this file is the same type. Fixes will be applied to that file.
+    /// If this file is of the other type. It will be converted and filled into the other file.
     pub(crate) output: Option<PathBuf>,
 }

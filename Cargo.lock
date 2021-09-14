@@ -21,18 +21,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
-name = "geo_converter"
-version = "0.1.0"
-dependencies = [
- "indexmap",
- "itertools",
- "rust_decimal",
- "rust_decimal_macros",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "hashbrown"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -165,3 +153,15 @@ name = "unicode-xid"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
+
+[[package]]
+name = "vatspy_geojson_converter"
+version = "0.1.0"
+dependencies = [
+ "indexmap",
+ "itertools",
+ "rust_decimal",
+ "rust_decimal_macros",
+ "serde",
+ "serde_json",
+]

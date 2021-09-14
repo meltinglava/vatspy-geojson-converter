@@ -74,6 +74,7 @@ impl FromStr for Point {
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct FIRBoundary {
+    pub(crate) id: usize,
     pub icao: String,
     pub is_oseanic: bool,
     pub is_extension: bool,
@@ -81,7 +82,7 @@ pub struct FIRBoundary {
     pub min_lon: Decimal,
     pub max_lat: Decimal,
     pub max_lon: Decimal,
-    pub center: Point,
+    pub lable: Point,
     pub bondary_corners: Vec<Point>,
 }
 
@@ -90,7 +91,7 @@ pub struct FIRBoundary {
 // 0000|111111111|22222222222|3333333333|444444|555555|666666|777777|888888888|999999999
 
 impl FIRBoundary {
-    fn parse_fields<T: BufRead>(f: &mut T) -> Result<Self, Box<dyn Error>> {
+    fn parse_fields<T: BufRead>(f: &mut T, n: usize) -> Result<Self, Box<dyn Error>> {
         let mut line = String::new();
         f.read_line(&mut line)?;
         let fields: Vec<_> = line.split('|').map(str::trim).collect();
@@ -112,6 +113,7 @@ impl FIRBoundary {
         .map(|s| Point::from_str(&s))
         .collect::<Result<Vec<_>, Box<dyn Error>>>()?;
         Ok(Self {
+            id: n,
             icao: fields[0].into(),
             is_oseanic: numstr_to_bool(fields[1]),
             is_extension: numstr_to_bool(fields[2]),
@@ -119,7 +121,7 @@ impl FIRBoundary {
             min_lon: fields[5].parse()?,
             max_lat: fields[6].parse()?,
             max_lon: fields[7].parse()?,
-            center: Point::new(fields[8].parse()?, fields[9].parse()?),
+            lable: Point::new(fields[8].parse()?, fields[9].parse()?),
             bondary_corners: v,
         })
     }
@@ -139,7 +141,7 @@ impl FIRBoundary {
             self.min_lon,
             self.max_lat,
             self.max_lon,
-            self.center.to_fir_dat_str(),
+            self.lable.to_fir_dat_str(),
         )?;
         self.bondary_corners
             .iter()
@@ -168,9 +170,10 @@ pub fn read_file() -> Result<Vec<FIRBoundary>, Box<dyn Error>> {
     let file = "FIRBoundaries.dat";
     let mut f = BufReader::new(File::open(file)?);
     let mut boundaries = Vec::new();
-
-    while let Ok(b) = FIRBoundary::parse_fields(&mut f) {
-        boundaries.push(b)
+    let mut count = 0;
+    while let Ok(b) = FIRBoundary::parse_fields(&mut f, count) {
+        boundaries.push(b);
+        count += 1;
     }
 
     Ok(boundaries)
@@ -180,9 +183,10 @@ pub(crate) fn convert_from_geojson(gj: crate::geo_json::GeoJson) -> Vec<FIRBound
     let data = gj.features;
     data.iter()
         .map(|n| {
-            let points = &n.geometry.array[0];
+            let points = &n.geometry.array[0][0];
             let points = &points[..points.len() - 1];
             let mut fir = FIRBoundary {
+                id: n.properties.id,
                 icao: n.properties.icao.clone(),
                 is_oseanic: n.properties.is_oceanic,
                 is_extension: n.properties.is_extension,
@@ -190,7 +194,7 @@ pub(crate) fn convert_from_geojson(gj: crate::geo_json::GeoJson) -> Vec<FIRBound
                 min_lon: points.iter().map(|n| n.lon).min().unwrap(),
                 max_lat: points.iter().map(|n| n.lat).max().unwrap(),
                 max_lon: points.iter().map(|n| n.lon).max().unwrap(),
-                center: n.properties.center.clone(),
+                lable: n.properties.lable.clone(),
                 bondary_corners: points.to_owned(),
             };
             if fir.max_lon - fir.min_lon > dec!(180) {
@@ -198,10 +202,7 @@ pub(crate) fn convert_from_geojson(gj: crate::geo_json::GeoJson) -> Vec<FIRBound
             }
             fir
         })
-        .sorted_unstable_by(|a, b| match a.icao.as_str().cmp(b.icao.as_str()) {
-            std::cmp::Ordering::Equal => a.is_extension.cmp(&b.is_extension),
-            n => n,
-        })
+        .sorted_unstable_by(|a, b| a.id.cmp(&b.id))
         .collect()
 }
 

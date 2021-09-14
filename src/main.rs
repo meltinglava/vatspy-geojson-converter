@@ -9,7 +9,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let data = fir_boundaries::read_file()?;
     fir_boundaries::write_to_file(&data, "fir_parsed.fir")?;
     let gj: GeoJson = data.into();
-    let gj_file = File::create("output.geojson")?;
+    let gj_file = File::create("fir.geojson")?;
     serde_json::to_writer_pretty(gj_file, &gj)?;
     let gj_str = serde_json::to_string(&gj)?;
     let gj_from: GeoJson = serde_json::from_str(&gj_str)?;

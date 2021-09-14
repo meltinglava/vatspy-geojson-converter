@@ -1,5 +1,5 @@
 [package]
-name = "vatspy_checker_and_parser"
+name = "vatspy_geojson_converter"
 authors = ["Roald <meltinglavaoutland@gmail.com>"]
 description = """
 A tool for validating and converting FIRBoundaries.dat and geojson file for vatspy.

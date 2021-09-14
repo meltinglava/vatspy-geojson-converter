@@ -72,19 +72,21 @@ impl From<&crate::fir_boundaries::FIRBoundary> for Feature {
 #[serde(rename_all = "PascalCase")]
 pub(crate) struct Properties {
     #[serde(rename = "ICAO")]
+    pub(crate) id: usize,
     pub(crate) icao: String,
     pub(crate) is_oceanic: bool,
     pub(crate) is_extension: bool,
-    pub(crate) center: Point,
+    pub(crate) lable: Point,
 }
 
 impl From<&crate::fir_boundaries::FIRBoundary> for Properties {
     fn from(fir: &crate::fir_boundaries::FIRBoundary) -> Self {
         Self {
+            id: fir.id,
             icao: fir.icao.clone(),
             is_oceanic: fir.is_oseanic,
             is_extension: fir.is_extension,
-            center: fir.center.clone(),
+            lable: fir.lable.clone(),
         }
     }
 }
@@ -93,7 +95,7 @@ impl From<&crate::fir_boundaries::FIRBoundary> for Properties {
 pub(crate) struct Geometry {
     #[serde(rename = "type")]
     typ: String,
-    pub(crate) array: [Vec<Point>; 1], // might need to do stuff here when crossing 180 east west
+    pub(crate) array: [[Vec<Point>; 1]; 1], // might need to do stuff here when crossing 180 east west
 }
 
 impl<T> From<T> for Geometry
@@ -106,8 +108,8 @@ where
             array.push(array[0].clone()); // ref: https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.6 second point
         }
         Self {
-            typ: "Polygon".to_string(),
-            array: [array],
+            typ: "MultiPolygon".to_string(),
+            array: [[array]],
         }
     }
 }

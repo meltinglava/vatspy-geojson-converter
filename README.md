@@ -8,15 +8,18 @@ This tool converts fir.geojson and FIRBoundaries.dat files for vatspy.
 ### Validating: 
 run `cargo run -- {name of file.(dat/json/geojson)}` 
 
+### Fixing: 
+run `cargo run -- {name of file.(dat/json/geojson)} {name_of_same_file}`
+
 ### Converting: 
-run `cargo run -- {name of file.(dat/json/geojson)} {name of converted file}` 
+run `cargo run -- {name of file.(dat/json/geojson)} {name of converted file.(dat/json/geojson)}` 
 
 
 ## installing rust
 
 ### windows
-install rustup either throught [rustup.rs](https://win.rustup.rs/)
-or throguht [scoop](scoop.sh) with `scoop install rustup` followed by `rustup update`
+install rustup either through [rustup.rs](https://win.rustup.rs/)
+or through [scoop](scoop.sh) with `scoop install rustup` followed by `rustup update`
 
 ## TODO!
 

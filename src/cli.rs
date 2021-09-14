@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::{AppSettings, Clap, crate_version};
+use clap::{crate_version, AppSettings, Clap};
 
 #[derive(Clap)]
 #[clap(version = crate_version!(), author = "meltinglava. <meltinglavaoutland@gmail.com>")]

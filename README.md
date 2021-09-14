@@ -2,11 +2,15 @@
 
 This tool converts fir.geojson and FIRBoundaries.dat files for vatspy.
 
-## Test
-for now copy `FIRBoundaries.dat` into this project locally. 
-Run `cargo run --relase`. 
-It will generate all the files that are generated back and forward 
-locally so they can be inspeced.
+
+
+## Using
+### Validating: 
+run `cargo run -- {name of file.(dat/json/geojson)}` 
+
+### Converting: 
+run `cargo run -- {name of file.(dat/json/geojson)} {name of converted file}` 
+
 
 ## installing rust
 

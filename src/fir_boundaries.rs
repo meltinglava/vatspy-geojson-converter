@@ -166,9 +166,8 @@ fn bool_to_num(b: bool) -> u8 {
     }
 }
 
-pub fn read_file() -> Result<Vec<FIRBoundary>, Box<dyn Error>> {
-    let file = "FIRBoundaries.dat";
-    let mut f = BufReader::new(File::open(file)?);
+pub fn read_file<P: AsRef<Path>>(p: P) -> Result<Vec<FIRBoundary>, Box<dyn Error>> {
+    let mut f = BufReader::new(File::open(p)?);
     let mut boundaries = Vec::new();
     let mut count = 0;
     while let Ok(b) = FIRBoundary::parse_fields(&mut f, count) {

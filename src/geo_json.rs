@@ -5,7 +5,7 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 
-use crate::fir_boundaries::Point;
+use crate::fir_boundaries::{Fill, Point, polygon_or_hole};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct GeoJson {
@@ -112,25 +112,11 @@ where
         Self {
             typ: "MultiPolygon".to_string(),
             array: [[array]],
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Fill {
-    Polygon,
-    Hole,
 }
 
 impl Geometry {
     fn polygon_or_hole(&self) -> Fill {
-        let arr = &self.array[0][0];
-        match arr
-            .windows(2)
-            .map(|v| v[0].lon * v[1].lat - v[0].lat * v[1].lon)
-            .sum::<Decimal>() / dec!(2.0)
-        {
-            n if n == dec!(0) => panic!("A stait line"),
-            s if s.is_sign_negative() => Fill::Polygon,
-            s if s.is_sign_positive() => Fill::Hole,
-            n => unreachable!("Math is off (are we in imag numbers): {}", n)
-        }
+        polygon_or_hole(&self.array[0][0])
     }
 }
 

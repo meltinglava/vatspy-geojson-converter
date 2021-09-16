@@ -72,6 +72,27 @@ impl FromStr for Point {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Fill {
+    Polygon,
+    Hole,
+}
+
+pub(crate) fn polygon_or_hole(arr: &[Point]) -> Fill {
+    match arr
+        .windows(2)
+        .map(|v| v[0].lon * v[1].lat - v[0].lat * v[1].lon)
+        .sum::<Decimal>() / dec!(2.0)
+    {
+        n if n == dec!(0) => panic!("A stait line"),
+        s if s.is_sign_negative() => Fill::Polygon,
+        s if s.is_sign_positive() => Fill::Hole,
+        n => unreachable!("Math is off (are we in imag numbers): {}", n)
+    }
+}
+
+
+
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct FIRBoundary {
     pub(crate) id: usize,
@@ -148,6 +169,10 @@ impl FIRBoundary {
             .map(|c| writeln!(writer, "{}", c.to_fir_dat_str()))
             .collect::<Result<Vec<_>, io::Error>>()
             .map(|_| ())
+    }
+
+    pub fn polygon_or_hole(&self) -> Fill {
+        polygon_or_hole(&self.bondary_corners)
     }
 }
 

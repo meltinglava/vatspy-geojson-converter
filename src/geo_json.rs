@@ -65,7 +65,7 @@ impl From<&crate::fir_boundaries::FIRBoundary> for Feature {
         Self {
             typ: "Feature".to_string(),
             properties: fir.into(),
-            geometry: fir.bondary_corners.as_slice().into(),
+            geometry: fir.boundary_corners.as_slice().into(),
         }
     }
 }
@@ -112,6 +112,8 @@ where
         Self {
             typ: "MultiPolygon".to_string(),
             array: [[array]],
+        }
+    }
 }
 
 impl Geometry {

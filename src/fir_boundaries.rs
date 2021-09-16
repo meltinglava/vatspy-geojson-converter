@@ -104,7 +104,7 @@ pub struct FIRBoundary {
     pub max_lat: Decimal,
     pub max_lon: Decimal,
     pub lable: Point,
-    pub bondary_corners: Vec<Point>,
+    pub boundary_corners: Vec<Point>,
 }
 
 // format:
@@ -133,7 +133,7 @@ impl FIRBoundary {
         .take(amount)
         .map(|s| Point::from_str(&s))
         .collect::<Result<Vec<_>, Box<dyn Error>>>()?;
-        Ok(Self {
+        let mut fir = Self {
             id: n,
             icao: fields[0].into(),
             is_oseanic: numstr_to_bool(fields[1]),
@@ -143,8 +143,16 @@ impl FIRBoundary {
             max_lat: fields[6].parse()?,
             max_lon: fields[7].parse()?,
             lable: Point::new(fields[8].parse()?, fields[9].parse()?),
-            bondary_corners: v,
-        })
+            boundary_corners: v,
+        };
+        let first = fir.boundary_corners.first().unwrap().clone();
+        if &first != fir.boundary_corners.last().unwrap() {
+            fir.boundary_corners.push(first);
+        }
+        if fir.polygon_or_hole() == Fill::Hole {
+            fir.boundary_corners.reverse()
+        }
+        Ok(fir)
     }
 
     fn to_writer<W>(&self, writer: &mut BufWriter<W>) -> io::Result<()>
@@ -157,14 +165,14 @@ impl FIRBoundary {
             &self.icao,
             bool_to_num(self.is_oseanic),
             bool_to_num(self.is_extension),
-            self.bondary_corners.len(),
+            self.boundary_corners.len(),
             self.min_lat,
             self.min_lon,
             self.max_lat,
             self.max_lon,
             self.lable.to_fir_dat_str(),
         )?;
-        self.bondary_corners
+        self.boundary_corners
             .iter()
             .map(|c| writeln!(writer, "{}", c.to_fir_dat_str()))
             .collect::<Result<Vec<_>, io::Error>>()
@@ -172,7 +180,7 @@ impl FIRBoundary {
     }
 
     pub fn polygon_or_hole(&self) -> Fill {
-        polygon_or_hole(&self.bondary_corners)
+        polygon_or_hole(&self.boundary_corners)
     }
 }
 
@@ -219,7 +227,7 @@ pub(crate) fn convert_from_geojson(gj: crate::geo_json::GeoJson) -> Vec<FIRBound
                 max_lat: points.iter().map(|n| n.lat).max().unwrap(),
                 max_lon: points.iter().map(|n| n.lon).max().unwrap(),
                 lable: n.properties.lable.clone(),
-                bondary_corners: points.to_owned(),
+                boundary_corners: points.to_owned(),
             };
             if fir.max_lon - fir.min_lon > dec!(180) {
                 std::mem::swap(&mut fir.max_lon, &mut fir.min_lon);

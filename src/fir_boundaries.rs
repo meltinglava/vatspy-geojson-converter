@@ -13,8 +13,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Point {
-    lat: Decimal,
-    lon: Decimal,
+    pub lat: Decimal,
+    pub lon: Decimal,
 }
 
 impl Serialize for Point {

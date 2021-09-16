@@ -220,7 +220,7 @@ mod tests {
 
     #[test]
     fn fir() {
-        let data = read_file();
+        let data = read_file("FIRBoundaries.dat");
         match data {
             Ok(_) => (),
             Err(e) => panic!("{}", e),

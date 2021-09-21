@@ -211,24 +211,25 @@ pub fn read_file<P: AsRef<Path>>(p: P) -> Result<Vec<FIRBoundary>, Box<dyn Error
 pub(crate) fn convert_from_geojson(gj: crate::geo_json::GeoJson) -> Vec<FIRBoundary> {
     let data = gj.features;
     data.iter()
-        .map(|n| {
-            let points = n.geometry.array[0][0].iter().cloned().collect::<IndexSet<_>>();
-            let mut fir = FIRBoundary {
-                id: n.properties.id,
-                icao: n.properties.icao.clone(),
-                is_oseanic: n.properties.is_oceanic,
-                is_extension: n.properties.is_extension,
-                min_lat: points.iter().map(|n| n.lat).min().unwrap(),
-                min_lon: points.iter().map(|n| n.lon).min().unwrap(),
-                max_lat: points.iter().map(|n| n.lat).max().unwrap(),
-                max_lon: points.iter().map(|n| n.lon).max().unwrap(),
-                lable: n.properties.lable.clone(),
-                boundary_corners: points,
-            };
-            if fir.max_lon - fir.min_lon > dec!(180) {
-                std::mem::swap(&mut fir.max_lon, &mut fir.min_lon);
-            }
-            fir
+        .flat_map(|fir| {
+            fir.geometry.array.iter().map(|n| n.get(0).unwrap()).enumerate().map(|(n, points)|{
+                let mut fir = FIRBoundary {
+                    id: fir.properties.id,
+                    icao: fir.properties.icao.clone(),
+                    is_oseanic: fir.properties.is_oceanic,
+                    is_extension: n != 0,
+                    min_lat: points.iter().map(|n| n.lat).min().unwrap(),
+                    min_lon: points.iter().map(|n| n.lon).min().unwrap(),
+                    max_lat: points.iter().map(|n| n.lat).max().unwrap(),
+                    max_lon: points.iter().map(|n| n.lon).max().unwrap(),
+                    lable: fir.properties.lable.clone(),
+                    boundary_corners: points.into_iter().cloned().collect(),
+                };
+                if fir.max_lon - fir.min_lon > dec!(180) {
+                    std::mem::swap(&mut fir.max_lon, &mut fir.min_lon);
+                }
+                fir
+            })
         })
         .sorted_unstable_by(|a, b| a.id.cmp(&b.id))
         .collect()

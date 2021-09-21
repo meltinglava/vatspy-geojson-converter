@@ -22,14 +22,40 @@ where
     T: Deref<Target = [crate::fir_boundaries::FIRBoundary]>,
 {
     fn from(data: T) -> Self {
-        let data = data.deref();
         Self {
             typ: "FeatureCollection".to_string(),
             name: String::new(),
             crs: Crs::default(),
-            features: data.iter().map(|v| v.into()).collect(),
+            features: generate_features(data)
         }
     }
+}
+
+fn generate_features<T>(data: T)-> Vec<Feature>
+where
+    T: Deref<Target = [crate::fir_boundaries::FIRBoundary]>,
+{
+    let data = data.deref();
+    let mut features = IndexSet::new();
+    let mut extensions = Vec::new();
+    for fir in data {
+        if !fir.is_extension {
+            assert!(features.insert(fir.into()));
+        } else {
+            extensions.push(fir.into());
+        }
+    }
+    let mut features = features.into_iter().collect_vec();
+    extensions.into_iter().for_each(|e: Feature|{
+        match features
+            .iter_mut()
+            .find(|fir: &&mut Feature| fir.properties.icao == e.properties.icao)
+        {
+            Some(fir) => fir.geometry.array.push([e.geometry.array[0][0].clone()]),
+            None => panic!("Extention FIR without Owning FIR"),
+        }
+    });
+    features
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -53,7 +79,7 @@ impl Default for Crs {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub(crate) struct Feature {
     #[serde(rename = "type")]
     typ: String,
@@ -71,14 +97,13 @@ impl From<&crate::fir_boundaries::FIRBoundary> for Feature {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[serde(rename_all = "PascalCase")]
 pub(crate) struct Properties {
     #[serde(rename = "ICAO")]
     pub(crate) id: usize,
     pub(crate) icao: String,
     pub(crate) is_oceanic: bool,
-    pub(crate) is_extension: bool,
     pub(crate) lable: Point,
 }
 
@@ -88,17 +113,16 @@ impl From<&crate::fir_boundaries::FIRBoundary> for Properties {
             id: fir.id,
             icao: fir.icao.clone(),
             is_oceanic: fir.is_oseanic,
-            is_extension: fir.is_extension,
             lable: fir.lable.clone(),
         }
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub(crate) struct Geometry {
     #[serde(rename = "type")]
     typ: String,
-    pub(crate) array: [[Vec<Point>; 1]; 1], // might need to do stuff here when crossing 180 east west
+    pub(crate) array: Vec<[Vec<Point>; 1]>, // we do not support holes yet.
 }
 
 /* Commented out due to trait rules: Compiler Error [E0119]
@@ -113,7 +137,7 @@ where
         }
         Self {
             typ: "MultiPolygon".to_string(),
-            array: [[array]],
+            array: [vec![array]],
         }
     }
 }
@@ -125,14 +149,14 @@ impl From<&IndexSet<Point>> for Geometry {
         array.push(array.first().unwrap().clone());  // ref: https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.6 second point
         Self {
             typ: "MultiPolygon".to_string(),
-            array: [[array]],
+            array: vec![[array]],
         }
     }
 }
 
 impl Geometry {
-    fn polygon_or_hole(&self) -> Fill {
-        polygon_or_hole(&self.array[0][0])
+    fn polygon_or_hole(&self) -> Vec<Fill> {
+        self.array[0].iter().map(|s| polygon_or_hole(s)).collect()
     }
 }
 
@@ -145,7 +169,7 @@ mod tests {
         let arr: Vec<_> = std::array::IntoIter::new(a).map(|v| Point::new(v[1].into(), v[0].into())).collect();
         Geometry {
             typ: "MultiPolygon".to_string(),
-            array: [[arr]],
+            array: [vec![arr]],
         }
     }
 

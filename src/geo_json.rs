@@ -1,6 +1,7 @@
 use std::ops::Deref;
 
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
+use itertools::Itertools;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
@@ -65,7 +66,7 @@ impl From<&crate::fir_boundaries::FIRBoundary> for Feature {
         Self {
             typ: "Feature".to_string(),
             properties: fir.into(),
-            geometry: fir.boundary_corners.as_slice().into(),
+            geometry: (&fir.boundary_corners).into(),
         }
     }
 }
@@ -100,6 +101,7 @@ pub(crate) struct Geometry {
     pub(crate) array: [[Vec<Point>; 1]; 1], // might need to do stuff here when crossing 180 east west
 }
 
+/* Commented out due to trait rules: Compiler Error [E0119]
 impl<T> From<T> for Geometry
 where
     T: Deref<Target = [Point]>,
@@ -109,6 +111,18 @@ where
         if array[0] != array[array.len() - 1] {
             array.push(array[0].clone()); // ref: https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.6 second point
         }
+        Self {
+            typ: "MultiPolygon".to_string(),
+            array: [[array]],
+        }
+    }
+}
+ */
+
+impl From<&IndexSet<Point>> for Geometry {
+    fn from(source: &IndexSet<Point>) -> Self {
+        let mut array = source.iter().cloned().collect_vec();
+        array.push(array.first().unwrap().clone());  // ref: https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.6 second point
         Self {
             typ: "MultiPolygon".to_string(),
             array: [[array]],

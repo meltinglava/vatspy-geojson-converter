@@ -6,6 +6,7 @@ use std::{
     str::FromStr,
 };
 
+use indexmap::IndexSet;
 use itertools::Itertools;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
@@ -104,7 +105,7 @@ pub struct FIRBoundary {
     pub max_lat: Decimal,
     pub max_lon: Decimal,
     pub lable: Point,
-    pub boundary_corners: Vec<Point>,
+    pub boundary_corners: IndexSet<Point>,
 }
 
 // format:
@@ -132,7 +133,7 @@ impl FIRBoundary {
         })
         .take(amount)
         .map(|s| Point::from_str(&s))
-        .collect::<Result<Vec<_>, Box<dyn Error>>>()?;
+        .collect::<Result<IndexSet<_>, Box<dyn Error>>>()?;
         let mut fir = Self {
             id: n,
             icao: fields[0].into(),
@@ -145,10 +146,6 @@ impl FIRBoundary {
             lable: Point::new(fields[8].parse()?, fields[9].parse()?),
             boundary_corners: v,
         };
-        let first = fir.boundary_corners.first().unwrap().clone();
-        if &first != fir.boundary_corners.last().unwrap() {
-            fir.boundary_corners.push(first);
-        }
         if fir.polygon_or_hole() == Fill::Hole {
             fir.boundary_corners.reverse()
         }
@@ -180,7 +177,7 @@ impl FIRBoundary {
     }
 
     pub fn polygon_or_hole(&self) -> Fill {
-        polygon_or_hole(&self.boundary_corners)
+        polygon_or_hole(self.boundary_corners.iter().cloned().collect_vec().as_slice())
     }
 }
 
@@ -215,8 +212,7 @@ pub(crate) fn convert_from_geojson(gj: crate::geo_json::GeoJson) -> Vec<FIRBound
     let data = gj.features;
     data.iter()
         .map(|n| {
-            let points = &n.geometry.array[0][0];
-            let points = &points[..points.len() - 1];
+            let points = n.geometry.array[0][0].iter().cloned().collect::<IndexSet<_>>();
             let mut fir = FIRBoundary {
                 id: n.properties.id,
                 icao: n.properties.icao.clone(),
@@ -227,7 +223,7 @@ pub(crate) fn convert_from_geojson(gj: crate::geo_json::GeoJson) -> Vec<FIRBound
                 max_lat: points.iter().map(|n| n.lat).max().unwrap(),
                 max_lon: points.iter().map(|n| n.lon).max().unwrap(),
                 lable: n.properties.lable.clone(),
-                boundary_corners: points.to_owned(),
+                boundary_corners: points,
             };
             if fir.max_lon - fir.min_lon > dec!(180) {
                 std::mem::swap(&mut fir.max_lon, &mut fir.min_lon);

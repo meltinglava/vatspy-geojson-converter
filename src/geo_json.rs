@@ -6,7 +6,7 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 
-use crate::fir_boundaries::{Fill, Point, polygon_or_hole};
+use crate::fir_boundaries::{polygon_or_hole, Fill, Point};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct GeoJson {
@@ -26,12 +26,12 @@ where
             typ: "FeatureCollection".to_string(),
             name: String::new(),
             crs: Crs::default(),
-            features: generate_features(data)
+            features: generate_features(data),
         }
     }
 }
 
-fn generate_features<T>(data: T)-> Vec<Feature>
+fn generate_features<T>(data: T) -> Vec<Feature>
 where
     T: Deref<Target = [crate::fir_boundaries::FIRBoundary]>,
 {
@@ -46,7 +46,7 @@ where
         }
     }
     let mut features = features.into_iter().collect_vec();
-    extensions.into_iter().for_each(|e: Feature|{
+    extensions.into_iter().for_each(|e: Feature| {
         match features
             .iter_mut()
             .find(|fir: &&mut Feature| fir.properties.icao == e.properties.icao)
@@ -92,7 +92,7 @@ impl From<&crate::fir_boundaries::FIRBoundary> for Feature {
         Self {
             typ: "Feature".to_string(),
             properties: fir.into(),
-            geometry: (&fir.boundary_corners).into(),
+            geometry: fir.boundary_corners.as_slice().into(),
         }
     }
 }
@@ -125,7 +125,6 @@ pub(crate) struct Geometry {
     pub(crate) array: Vec<[Vec<Point>; 1]>, // we do not support holes yet.
 }
 
-/* Commented out due to trait rules: Compiler Error [E0119]
 impl<T> From<T> for Geometry
 where
     T: Deref<Target = [Point]>,
@@ -137,12 +136,12 @@ where
         }
         Self {
             typ: "MultiPolygon".to_string(),
-            array: [vec![array]],
+            array: vec![[array]],
         }
     }
 }
- */
 
+/* Commented out due to trait rules: Compiler Error [E0119]
 impl From<&IndexSet<Point>> for Geometry {
     fn from(source: &IndexSet<Point>) -> Self {
         let mut array = source.iter().cloned().collect_vec();
@@ -153,6 +152,7 @@ impl From<&IndexSet<Point>> for Geometry {
         }
     }
 }
+ */
 
 impl Geometry {
     fn polygon_or_hole(&self) -> Vec<Fill> {
@@ -166,7 +166,9 @@ mod tests {
 
     fn make_test_geometry() -> Geometry {
         let a = [[1, 1], [0, 2], [1, 3], [2, 2]];
-        let arr: Vec<_> = std::array::IntoIter::new(a).map(|v| Point::new(v[1].into(), v[0].into())).collect();
+        let arr: Vec<_> = std::array::IntoIter::new(a)
+            .map(|v| Point::new(v[1].into(), v[0].into()))
+            .collect();
         Geometry {
             typ: "MultiPolygon".to_string(),
             array: [vec![arr]],

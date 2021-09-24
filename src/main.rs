@@ -40,8 +40,7 @@ fn main() -> eyre::Result<()> {
             return Err(eyre!(
                 "Unrecognized file extention: .{}. run --help for more info",
                 e
-            )
-            .into())
+            ))
         }
         None => return Err(eyre!("No file extention found. run --help for more info")),
     };

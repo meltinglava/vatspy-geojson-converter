@@ -37,13 +37,15 @@ impl ErrorCollector {
     where
         E: Into<FIRParsingError>,
     {
-        Ok(self.errors.push(e.into().recoverable()?))
+        self.errors.push(e.into().recoverable()?);
+        Ok(())
     }
 
     pub fn adderrors(&mut self, others: Self) {
         self.errors.extend(others.errors)
     }
 
+    #[allow(clippy::wrong_self_convention)]
     pub fn to_col_result<T>(self, t: T) -> ColResult<T> {
         match self.errors.is_empty() {
             true => Ok(t),

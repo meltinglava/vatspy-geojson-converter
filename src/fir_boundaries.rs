@@ -197,7 +197,7 @@ impl FIRBoundary {
         *linenr += 1;
         let fields: Vec<_> = line.split('|').map(str::trim).collect();
         if fields.len() != 10 {
-            return if f.fill_buf()?.len() == 0 {
+            return if !f.fill_buf()?.is_empty() {
                 Err(FIRParsingError::EOFError)
             } else {
                 Err(FIRParsingError::FIRParsing(format!(
@@ -242,7 +242,7 @@ impl FIRBoundary {
                         duplicates.insert(point.clone());
                     }
                 }
-                if duplicates.len() != 0 {
+                if !duplicates.is_empty() {
                     errors.adderror(FIRParsingError::DuplicatePointError {
                         points: duplicates,
                         owner: fir.icao.clone(),
@@ -290,7 +290,7 @@ impl FIRBoundary {
                 .into_iter()
                 .filter(|(f, c, _)| f != c)
                 .collect_vec();
-                if wrong.len() != 0 {
+                if !wrong.is_empty() {
                     errors.adderror(FIRParsingError::WrongMinMax(wrong, fir.icao.clone()))?;
                 }
             }
@@ -379,7 +379,7 @@ pub fn read_file<P: AsRef<Path>>(p: P, mode: Mode) -> FIRResult<ColResult<Vec<FI
             true => {
                 extentions
                     .entry(b.icao.clone())
-                    .or_insert_with(|| Vec::new())
+                    .or_insert_with(Vec::new)
                     .push(b);
             }
             false => match boundaries.entry((b.icao.clone(), b.is_oseanic)) {
@@ -394,7 +394,7 @@ pub fn read_file<P: AsRef<Path>>(p: P, mode: Mode) -> FIRResult<ColResult<Vec<FI
             },
         }
     }
-    if duplicate_firs.len() != 0 {
+    if !duplicate_firs.is_empty() {
         errors.adderror(FIRParsingError::MultipleFirs(
             duplicate_firs
                 .into_iter()
@@ -406,9 +406,8 @@ pub fn read_file<P: AsRef<Path>>(p: P, mode: Mode) -> FIRResult<ColResult<Vec<FI
     for (_, fir) in boundaries {
         all.push(fir);
         let fir = all.last().unwrap();
-        match extentions.remove(fir.icao.as_str()) {
-            Some(s) => s.into_iter().for_each(|v| all.push(v)),
-            None => (),
+        if let Some(s) = extentions.remove(fir.icao.as_str()) {
+            s.into_iter().for_each(|v| all.push(v));
         }
     }
 
@@ -421,7 +420,7 @@ pub fn read_file<P: AsRef<Path>>(p: P, mode: Mode) -> FIRResult<ColResult<Vec<FI
             //.inspect(|(n, fir)| {dbg!(n, fir.id);})
             .map(|(_, fir)| fir.icao.clone())
             .collect();
-        if wrong_orders.len() != 0 {
+        if !wrong_orders.is_empty(){
             errors.adderror(FIRParsingError::ExtentionNotAfterFir(wrong_orders))?;
         }
     }
@@ -449,7 +448,7 @@ pub(crate) fn convert_from_geojson(gj: crate::geo_json::GeoJson) -> Vec<FIRBound
                         max_lat: points.iter().map(|n| n.lat).max().unwrap(),
                         max_lon: points.iter().map(|n| n.lon).max().unwrap(),
                         lable: fir.properties.lable.clone(),
-                        boundary_corners: points.into_iter().cloned().collect(),
+                        boundary_corners: points.to_vec(),
                     };
                     fix_min_max_lon(&mut fir.min_lon, &mut fir.max_lon);
                     fir

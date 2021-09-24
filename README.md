@@ -15,7 +15,7 @@ run `cargo run -- {name of file.(dat/json/geojson)} {name_of_same_file}`
 run `cargo run -- {name of file.(dat/json/geojson)} {name of converted file.(dat/json/geojson)}` 
 
 
-## installing rust
+## installing rust and cargo
 
 ### windows
 install rustup either through [rustup.rs](https://win.rustup.rs/)

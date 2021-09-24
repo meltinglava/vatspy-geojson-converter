@@ -1,10 +1,12 @@
 use std::{error::Error, fs::File};
 
+use color_eyre::eyre::{self, eyre};
 use geo_json::GeoJson;
 
 use clap::Clap;
 use either::Either::{Left, Right};
 
+pub(crate) mod error_collector;
 pub(crate) mod fir_boundaries;
 pub(crate) mod geo_json;
 
@@ -15,21 +17,33 @@ enum Filetype {
     GeoJson,
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Mode {
+    Strict,
+    Fix,
+}
+
+fn main() -> eyre::Result<()> {
+    color_eyre::install()?;
     let opts = cli::Opts::parse();
+    let mode = match &opts.output {
+        Some(_) => Mode::Fix,
+        None => Mode::Strict,
+    };
+
     let data = match opts.input.extension().map(|os| os.to_str().unwrap()) {
         Some("json") | Some("geojson") => Left(serde_json::from_reader::<_, GeoJson>(File::open(
             opts.input,
         )?)?),
-        Some("dat") => Right(fir_boundaries::read_file(opts.input)?),
+        Some("dat") => Right(fir_boundaries::read_file(opts.input, mode)??),
         Some(e) => {
-            return Err(format!(
+            return Err(eyre!(
                 "Unrecognized file extention: .{}. run --help for more info",
                 e
             )
             .into())
         }
-        None => return Err("No file extention found. run --help for more info".into()),
+        None => return Err(eyre!("No file extention found. run --help for more info")),
     };
 
     if let Some(f) = opts.output {
@@ -37,13 +51,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             Some("json") | Some("geojson") => Filetype::GeoJson,
             Some("dat") => Filetype::Dat,
             Some(e) => {
-                return Err(format!(
+                return Err(eyre!(
                     "Unrecognized file extention: .{}. run --help for more info",
                     e
-                )
-                .into())
+                ))
             }
-            None => return Err("No file extention found. run --help for more info".into()),
+            None => return Err(eyre!("No file extention found. run --help for more info")),
         };
         match data {
             Left(geojson_data) => match ft {

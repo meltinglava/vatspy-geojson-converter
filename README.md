@@ -3,6 +3,8 @@
 This tool converts fir.geojson and FIRBoundaries.dat files for vatspy.
 
 
+## Downloading:
+[The latest version can be downloaded from the release page](https://github.com/meltinglava/vatspy-geojson-converter/releases)
 
 ## Using
 ### Validating: 

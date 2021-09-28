@@ -1,8 +1,6 @@
 # .github/workflows/release.yml
 
-on:
-  release:
-    types: [created]
+on: release
 
 jobs:
   release:

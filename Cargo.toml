@@ -11,7 +11,7 @@ edition = "2018"
 
 [dependencies]
 clap = { version = "3.0.0-beta.4", features = ["derive"] }
-color-eyre = "0.5.11"
+color-eyre = { version = "0.5.11", default-features = false }
 either = "1.6.1"
 indexmap = { version = "1.7.0", features = ["serde"] }
 itertools = "0.10.1"

@@ -195,26 +195,28 @@ impl FIRBoundary {
         let mut line = String::new();
         f.read_line(&mut line)?;
         *linenr += 1;
-        let fields: Vec<_> = line.split('|').map(str::trim).collect();
+        let fields: Vec<_> = line.split('|').map(str::trim).filter(|s| !s.is_empty()).collect();
         if fields.len() != 10 {
-            return if !f.fill_buf()?.is_empty() {
-                Err(FIRParsingError::EOFError)
+            return Err(if f.fill_buf()?.is_empty() {
+                FIRParsingError::EOFError
             } else {
-                Err(FIRParsingError::FIRParsing(format!(
-                    "Expected 10 fields, found: {}, values: {:?}",
+                FIRParsingError::FIRParsing(format!(
+                    "line: {2}, Expected 10 fields, found: {}, values: {:?}",
                     fields.len(),
-                    &fields
-                )))
-            };
+                    &fields,
+                    *linenr,
+                ))
+            });
         }
         let amount: usize = fields[3].parse()?;
-        let v = std::iter::repeat_with(|| -> FIRResult<String> {
+        let v = std::iter::repeat_with(|| -> FIRResult<(String, usize)> {
             let mut s = String::new();
             f.read_line(&mut s)?;
-            Ok(s)
+            *linenr += 1;
+            Ok((s, *linenr))
         })
         .take(amount)
-        .map(|r| r.and_then(|s| Point::from_str(&s)))
+        .map(|r| r.and_then(|(s, l)| Point::from_str(&s).map(|p| (p, l))))
         .collect::<Result<Vec<_>, _>>()?;
         let mut fir = Self {
             id: *count,
@@ -226,7 +228,7 @@ impl FIRBoundary {
             max_lat: fields[6].parse()?,
             max_lon: fields[7].parse()?,
             lable: Point::new(fields[8].parse()?, fields[9].parse()?)?,
-            boundary_corners: v,
+            boundary_corners: v.iter().map(|(p, _)| p.clone()).collect(),
         };
         *count += 1;
         match mode {

@@ -2,8 +2,8 @@ use std::ops::Deref;
 
 use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
-use rust_decimal::Decimal;
-use rust_decimal_macros::dec;
+// use rust_decimal::Decimal;
+// use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 
 use crate::fir_boundaries::{polygon_or_hole, Fill, Point};
@@ -164,18 +164,19 @@ mod tests {
 
     fn make_test_geometry() -> Geometry {
         let a = [[1, 1], [0, 2], [1, 3], [2, 2]];
-        let arr: Vec<_> = std::array::IntoIter::new(a)
+        let arr = std::array::IntoIter::new(a)
             .map(|v| Point::new(v[1].into(), v[0].into()))
-            .collect();
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
         Geometry {
             typ: "MultiPolygon".to_string(),
-            array: [vec![arr]],
+            array: vec![[arr]],
         }
     }
 
     #[test]
     fn test_polygon_or_hole() {
         let g = make_test_geometry();
-        assert_eq!(g.polygon_or_hole(), Fill::Polygon)
+        assert_eq!(g.polygon_or_hole(), vec![Fill::Polygon])
     }
 }

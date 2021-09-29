@@ -101,7 +101,6 @@ impl From<&crate::fir_boundaries::FIRBoundary> for Feature {
 #[serde(rename_all = "PascalCase")]
 pub(crate) struct Properties {
     #[serde(rename = "ICAO")]
-    pub(crate) id: usize,
     pub(crate) icao: String,
     pub(crate) is_oceanic: bool,
     pub(crate) lable: Point,
@@ -110,7 +109,6 @@ pub(crate) struct Properties {
 impl From<&crate::fir_boundaries::FIRBoundary> for Properties {
     fn from(fir: &crate::fir_boundaries::FIRBoundary) -> Self {
         Self {
-            id: fir.id,
             icao: fir.icao.clone(),
             is_oceanic: fir.is_oseanic,
             lable: fir.lable.clone(),

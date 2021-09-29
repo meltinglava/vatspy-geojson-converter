@@ -1,4 +1,5 @@
 use std::{
+    cell::Cell,
     fmt::{self, Display},
     fs::File,
     io::{self, BufRead, BufReader, BufWriter, Write},
@@ -195,7 +196,11 @@ impl FIRBoundary {
         let mut line = String::new();
         f.read_line(&mut line)?;
         *linenr += 1;
-        let fields: Vec<_> = line.split('|').map(str::trim).filter(|s| !s.is_empty()).collect();
+        let fields: Vec<_> = line
+            .split('|')
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .collect();
         if fields.len() != 10 {
             return Err(if f.fill_buf()?.is_empty() {
                 FIRParsingError::EOFError
@@ -364,9 +369,9 @@ pub fn read_file<P: AsRef<Path>>(p: P, mode: Mode) -> FIRResult<ColResult<Vec<FI
     let mut count = 0;
     let mut errors = ErrorCollector::new();
     let mut linenr = 0;
-    for b in
-        std::iter::repeat_with(move || FIRBoundary::parse_fields(&mut f, &mut count, mode, &mut linenr))
-    {
+    for b in std::iter::repeat_with(move || {
+        FIRBoundary::parse_fields(&mut f, &mut count, mode, &mut linenr)
+    }) {
         if let Err(FIRParsingError::EOFError) = b {
             break;
         }
@@ -422,7 +427,7 @@ pub fn read_file<P: AsRef<Path>>(p: P, mode: Mode) -> FIRResult<ColResult<Vec<FI
             //.inspect(|(n, fir)| {dbg!(n, fir.id);})
             .map(|(_, fir)| fir.icao.clone())
             .collect();
-        if !wrong_orders.is_empty(){
+        if !wrong_orders.is_empty() {
             errors.adderror(FIRParsingError::ExtentionNotAfterFir(wrong_orders))?;
         }
     }
@@ -432,6 +437,8 @@ pub fn read_file<P: AsRef<Path>>(p: P, mode: Mode) -> FIRResult<ColResult<Vec<FI
 
 pub(crate) fn convert_from_geojson(gj: crate::geo_json::GeoJson) -> Vec<FIRBoundary> {
     let data = gj.features;
+    let number = Cell::new(0usize);
+    let nr = &number;
     data.iter()
         .flat_map(|fir| {
             fir.geometry
@@ -441,7 +448,7 @@ pub(crate) fn convert_from_geojson(gj: crate::geo_json::GeoJson) -> Vec<FIRBound
                 .enumerate()
                 .map(move |(n, points)| {
                     let mut fir = FIRBoundary {
-                        id: fir.properties.id,
+                        id: nr.get(),
                         icao: fir.properties.icao.clone(),
                         is_oseanic: fir.properties.is_oceanic,
                         is_extension: n != 0,
@@ -452,6 +459,7 @@ pub(crate) fn convert_from_geojson(gj: crate::geo_json::GeoJson) -> Vec<FIRBound
                         lable: fir.properties.lable.clone(),
                         boundary_corners: points.to_vec(),
                     };
+                    nr.set(nr.get() + 1); // use update once https://github.com/rust-lang/rust/issues/50186 lands in stable
                     fix_min_max_lon(&mut fir.min_lon, &mut fir.max_lon);
                     fir
                 })

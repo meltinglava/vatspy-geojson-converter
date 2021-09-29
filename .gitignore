@@ -1,4 +1,4 @@
 /target
 /FIRBoundaries.dat
 *.dat
-/test
+/test*

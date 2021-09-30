@@ -464,7 +464,14 @@ pub(crate) fn convert_from_geojson(gj: crate::geo_json::GeoJson) -> Vec<FIRBound
                     fir
                 })
         })
-        .sorted_unstable_by(|a, b| a.id.cmp(&b.id))
+        .sorted_unstable_by(|a, b| match a.icao.as_str().cmp(b.icao.as_str()){
+            std::cmp::Ordering::Equal => match a.is_oseanic == b.is_oseanic{
+                true => std::cmp::Ordering::Equal,
+                false if a.is_oseanic => std::cmp::Ordering::Less,
+                false => std::cmp::Ordering::Greater,
+            },
+            n => n,
+        })
         .collect()
 }
 
